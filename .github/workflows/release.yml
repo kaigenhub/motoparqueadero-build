@@ -1,0 +1,92 @@
+name: Compilar y publicar MotoParqueadero
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versión del tag privado, sin la letra v (ejemplo: 0.2.4)"
+        required: true
+        type: string
+  repository_dispatch:
+    types: [publish]
+
+permissions:
+  contents: read
+
+jobs:
+  publish-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: "--target universal-apple-darwin"
+          - platform: windows-latest
+            args: "--target x86_64-pc-windows-msvc --bundles nsis"
+
+    runs-on: ${{ matrix.platform }}
+    env:
+      RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event.client_payload.version }}
+
+    steps:
+      - name: Descargar código privado
+        uses: actions/checkout@v4
+        with:
+          repository: kaigenhub/motoparqueadero
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || format('v{0}', github.event.client_payload.version) }}
+          token: ${{ secrets.SOURCE_REPO_TOKEN }}
+          fetch-depth: 1
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar targets de Rust para macOS
+        if: runner.os == 'macOS'
+        run: |
+          rustup target add aarch64-apple-darwin
+          rustup target add x86_64-apple-darwin
+
+      - name: Verificar versión
+        env:
+          EXPECTED_VERSION: ${{ env.RELEASE_VERSION }}
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+          const expected = process.env.EXPECTED_VERSION.replace(/^v/, "");
+          const pkg = require("./package.json").version;
+          const tauri = require("./src-tauri/tauri.conf.json").version;
+          const cargo = fs.readFileSync("./src-tauri/Cargo.toml", "utf8").match(/^version = "([^"]+)"/m)?.[1];
+          const versions = { expected, pkg, tauri, cargo };
+          if (new Set(Object.values(versions)).size !== 1) {
+            console.error("Versiones desalineadas:", versions);
+            process.exit(1);
+          }
+          console.log("Versión validada:", expected);
+          NODE
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar y publicar instaladores
+        uses: tauri-apps/tauri-action@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: .
+          owner: kaigenhub
+          repo: motoparqueadero-releases
+          releaseCommitish: main
+          tagName: v${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event.client_payload.version }}
+          releaseName: MotoParqueadero v${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event.client_payload.version }}
+          releaseBody: Instaladores firmados universales de MotoParqueadero para macOS y Windows.
+          releaseDraft: false
+          prerelease: false
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true
+          args: ${{ matrix.args }}
