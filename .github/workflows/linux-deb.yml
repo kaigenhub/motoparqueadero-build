@@ -1,39 +1,28 @@
-name: Compilar y publicar MotoParqueadero
+name: Compilar MotoParqueadero para Ubuntu
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Versión del tag privado, sin la letra v (ejemplo: 0.2.4)"
+        description: "Versión del tag privado, sin la letra v (ejemplo: 0.1.10)"
         required: true
         type: string
-  repository_dispatch:
-    types: [publish]
 
 permissions:
   contents: read
 
 jobs:
-  publish-tauri:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: macos-latest
-            args: "--target universal-apple-darwin"
-          - platform: windows-latest
-            args: "--target x86_64-pc-windows-msvc --bundles nsis"
-
-    runs-on: ${{ matrix.platform }}
+  build-linux-deb:
+    runs-on: ubuntu-22.04
     env:
-      RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event.client_payload.version }}
+      RELEASE_VERSION: ${{ inputs.version }}
 
     steps:
       - name: Descargar código privado
         uses: actions/checkout@v4
         with:
           repository: kaigenhub/motoparqueadero
-          ref: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || format('v{0}', github.event.client_payload.version) }}
+          ref: v${{ inputs.version }}
           token: ${{ secrets.SOURCE_REPO_TOKEN }}
           fetch-depth: 1
 
@@ -43,11 +32,10 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Instalar targets de Rust para macOS
-        if: runner.os == 'macOS'
+      - name: Instalar dependencias de Ubuntu
         run: |
-          rustup target add aarch64-apple-darwin
-          rustup target add x86_64-apple-darwin
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Verificar versión
         env:
@@ -71,22 +59,20 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Compilar y publicar instaladores
+      - name: Compilar y publicar únicamente el paquete .deb
         uses: tauri-apps/tauri-action@v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASES_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: .
           owner: kaigenhub
           repo: motoparqueadero-releases
           releaseCommitish: main
-          tagName: v${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event.client_payload.version }}
-          releaseName: MotoParqueadero v${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event.client_payload.version }}
-          releaseBody: Instaladores firmados universales de MotoParqueadero para macOS y Windows.
+          tagName: v${{ inputs.version }}
+          releaseName: MotoParqueadero v${{ inputs.version }}
+          releaseBody: Instalador Debian de MotoParqueadero para Ubuntu.
           releaseDraft: false
           prerelease: false
           uploadUpdaterJson: true
-          updaterJsonPreferNsis: true
-          args: ${{ matrix.args }}
+          args: --bundles deb
