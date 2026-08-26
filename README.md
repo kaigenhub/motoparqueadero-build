@@ -20,14 +20,16 @@ Las claves nunca deben guardarse en este repositorio.
 1. Crear y subir el tag correspondiente en el repositorio privado, por ejemplo `v0.2.4`.
 2. Ir a **Actions → Compilar y publicar MotoParqueadero → Run workflow**.
 3. Escribir la versión sin `v`, por ejemplo `0.2.4`.
-4. El workflow compila macOS universal y Windows x64 NSIS y publica los archivos en `motoparqueadero-releases`.
+4. Seleccionar la plataforma: `all`, `linux`, `macos` o `windows`.
+5. El workflow compila macOS universal, Windows x64 NSIS o Ubuntu `.deb` según la selección y publica los archivos en `motoparqueadero-releases`.
 
 También se puede iniciar desde una terminal con:
 
 ```bash
 gh workflow run release.yml \
   --repo kaigenhub/motoparqueadero-build \
-  -f version=0.2.4
+  -f version=0.2.4 \
+  -f platform=all
 ```
 
 Los runners estándar de este repositorio público no consumen minutos facturables de GitHub Actions.
