@@ -1,6 +1,6 @@
-# MotoParqueadero Build
+# ParkingLot Build
 
-Repositorio público dedicado únicamente a compilar y publicar MotoParqueadero.
+Repositorio público dedicado únicamente a compilar y publicar ParkingLot.
 
 El código fuente permanece en el repositorio privado `kaigenhub/motoparqueadero`. Este repositorio no contiene el código ni las claves privadas: el workflow lo descarga usando secretos cifrados de GitHub y publica los instaladores en `kaigenhub/motoparqueadero-releases`.
 
@@ -18,18 +18,18 @@ Las claves nunca deben guardarse en este repositorio.
 ## Publicar una versión
 
 1. Crear y subir el tag correspondiente en el repositorio privado, por ejemplo `v0.2.4`.
-2. Ir a **Actions → Compilar y publicar MotoParqueadero → Run workflow**.
+2. Ir a **Actions → Compilar y publicar ParkingLot → Run workflow**.
 3. Escribir la versión sin `v`, por ejemplo `0.2.4`.
-4. El workflow compila macOS universal y Windows x64 NSIS y publica los archivos en `motoparqueadero-releases`.
+4. El workflow compila macOS universal, Windows x64 NSIS y Ubuntu `.deb`, y publica los archivos en `motoparqueadero-releases`.
 
-Para compilar únicamente Ubuntu en formato `.deb`, ve a **Actions → Compilar MotoParqueadero para Ubuntu → Run workflow**, escribe la versión y ejecútalo.
+Para compilar únicamente Ubuntu en formato `.deb`, ve a **Actions → Compilar ParkingLot para Ubuntu → Run workflow**, escribe la versión y ejecútalo.
 
 También se puede iniciar desde una terminal con:
 
 ```bash
 gh workflow run release.yml \
   --repo kaigenhub/motoparqueadero-build \
-  -f version=0.2.4
+  -f version=2.0.4
 ```
 
 Para Ubuntu `.deb`:
@@ -37,14 +37,14 @@ Para Ubuntu `.deb`:
 ```bash
 gh workflow run linux-deb.yml \
   --repo kaigenhub/motoparqueadero-build \
-  -f version=0.1.10
+  -f version=2.0.4
 ```
 
 Los runners estándar de este repositorio público no consumen minutos facturables de GitHub Actions.
 
 ## Arquitectura
 
-- `motoparqueadero`: código fuente privado.
+- `motoparqueadero`: código fuente privado de ParkingLot.
 - `motoparqueadero-build`: workflow público de compilación.
 - `motoparqueadero-releases`: instaladores y archivos de actualización públicos.
 

@@ -1,10 +1,10 @@
-name: Compilar y publicar MotoParqueadero
+name: Compilar y publicar ParkingLot
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Versión del tag privado, sin la letra v (ejemplo: 0.2.4)"
+        description: "Versión del tag privado, sin la letra v (ejemplo: 2.0.4)"
         required: true
         type: string
   repository_dispatch:
@@ -23,6 +23,8 @@ jobs:
             args: "--target universal-apple-darwin"
           - platform: windows-latest
             args: "--target x86_64-pc-windows-msvc --bundles nsis"
+          - platform: ubuntu-22.04
+            args: "--bundles deb"
 
     runs-on: ${{ matrix.platform }}
     env:
@@ -48,6 +50,12 @@ jobs:
         run: |
           rustup target add aarch64-apple-darwin
           rustup target add x86_64-apple-darwin
+
+      - name: Instalar dependencias de Ubuntu
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Verificar versión
         env:
@@ -83,8 +91,8 @@ jobs:
           repo: motoparqueadero-releases
           releaseCommitish: main
           tagName: v${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event.client_payload.version }}
-          releaseName: MotoParqueadero v${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event.client_payload.version }}
-          releaseBody: Instaladores firmados universales de MotoParqueadero para macOS y Windows.
+          releaseName: ParkingLot v${{ github.event_name == 'workflow_dispatch' && inputs.version || github.event.client_payload.version }}
+          releaseBody: Instaladores firmados de ParkingLot para macOS universal, Windows x64 y Ubuntu (.deb).
           releaseDraft: false
           prerelease: false
           uploadUpdaterJson: true

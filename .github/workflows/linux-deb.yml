@@ -1,10 +1,10 @@
-name: Compilar MotoParqueadero para Ubuntu
+name: Compilar ParkingLot para Ubuntu
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Versión del tag privado, sin la letra v (ejemplo: 0.1.10)"
+        description: "Versión del tag privado, sin la letra v (ejemplo: 2.0.4)"
         required: true
         type: string
 
@@ -70,8 +70,8 @@ jobs:
           repo: motoparqueadero-releases
           releaseCommitish: main
           tagName: v${{ inputs.version }}
-          releaseName: MotoParqueadero v${{ inputs.version }}
-          releaseBody: Instalador Debian de MotoParqueadero para Ubuntu.
+          releaseName: ParkingLot v${{ inputs.version }}
+          releaseBody: Instalador Debian de ParkingLot para Ubuntu.
           releaseDraft: false
           prerelease: false
           uploadUpdaterJson: true
